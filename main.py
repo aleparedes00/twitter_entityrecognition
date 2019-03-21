@@ -47,17 +47,20 @@ def split_dataset(tweet: str, enterprises: {})-> []:
         if word in enterprises:
             list_entity = word, enterprises.get(word)
         else:
-            list_entity = word, 0
+            if not word or '...' in word:
+                continue
+            list_entity = word, 'O'
         big_list.append(list_entity)
     write_tweet_on_file(big_list)
-    # big_list = [s.join(',') for s in list_entity].join('\n')
     return big_list
 
 
 def data_cleaning(tweet: str)-> str:
     # removing URLs
+    punctuations = "[^\w\s]"
     url_regex = "(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?"
     tweet_without_url = re.sub(url_regex, '', tweet)
+    tweet_without_p = re.sub(punctuations, '', tweet_without_url)
     # removing emojis (almost all of them)
     emojis = re.compile("["
                        "\U0001F600-\U0001F64F"
@@ -65,16 +68,24 @@ def data_cleaning(tweet: str)-> str:
                        "\U0001F680-\U0001F6FF"
                        "\U0001F1E0-\U0001F1FF"
                        "]+", flags=re.UNICODE)
-    # print(emojis.sub("", tweet_without_url))
-    return re.sub(url_regex, '', tweet)
+    clean_tweet = emojis.sub("", tweet_without_p)
+    return clean_tweet
 
 
 def main():
     twitter = Twython(API_K, API_S_K, ACC_T, ACC_S_T)
-    enterprises = ['coca cola', 'facebook', 'microsoft', 'southwest airlines', 'new york times', 'jetblue', 'home depot', 'directline_uk', 'tesco', 'royalmail', 'morrisons']
+    enterprises = ['coca cola',
+                   'facebook',
+                   'microsoft',
+                   'bofa_help',
+                   'new york times',
+                   'jetblue',
+                   'mattel',
+                   'directline_uk',
+                   'tesco',
+                   'royalmail',
+                   'morrisons']
     enterprises = enterprises_to_dict(enterprises)
-    tweets_dict = {}
-    my_list = []
     i = 0
     for comp in enterprises.values():
         tweets = twitter.search(q=comp, result_type='mixed', lang='en', count="100")
@@ -84,12 +95,7 @@ def main():
                 final_tweet = data_cleaning(text)
                 i += 1
                 split_dataset(final_tweet, enterprises)
-                # my_list.append()
-
-                # my_list.append(final_tweet)
-        # tweets_dict[comp] = my_list
-    # data_frame = pandas.DataFrame(my_list)
-
+    print(i)
     return 1
     # print_dict(enterprises_dict)
 
